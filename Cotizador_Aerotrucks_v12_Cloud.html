@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerotrucks Barcelona, C.A. - Cotizador Comercial v12 Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .tab-active { border-bottom: 3px solid #EAB308; color: #EAB308; font-weight: bold; }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <header class="bg-gray-900 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center font-black text-gray-900 text-xl">AB</div>
+                <div>
+                    <h1 class="text-xl font-bold text-yellow-500">AEROTRUCKS BARCELONA, C.A.</h1>
+                    <p class="text-xs text-gray-400">RIF: J-503433256 • Sistema de Cotizaciones (v12 Cloud)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="cloudStatus" class="text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700 text-yellow-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud-arrow-down fa-bounce"></i> Sincronizando...
+                </span>
+                <span class="text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700 text-gray-300"><i class="fa-solid fa-calculator text-yellow-500 mr-1"></i> IVA: 16%</span>
+                <button onclick="resetCotizadorClean()" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded font-bold transition flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> Nueva</button>
+            </div>
+        </div>
+        <!-- PESTAÑAS DE NAVEGACIÓN -->
+        <nav class="bg-gray-800 border-t border-gray-700 px-4">
+            <div class="max-w-7xl mx-auto flex space-x-6 text-sm overflow-x-auto">
+                <button onclick="switchTab('cotizador')" id="tab-cotizador" class="py-3 px-2 tab-active transition flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar"></i> Cotizador</button>
+                <button onclick="switchTab('ordenservicio')" id="tab-ordenservicio" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer text-yellow-400"></i> Orden de Servicio (Bs.)</button>
+                <button onclick="switchTab('calculadora')" id="tab-calculadora" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-calculator text-yellow-400"></i> Calculadora PVP</button>
+                <button onclick="switchTab('clientes')" id="tab-clientes" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-address-book"></i> Clientes</button>
+                <button onclick="switchTab('repuestos')" id="tab-repuestos" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-boxes-stacked"></i> Catálogo Repuestos</button>
+                <button onclick="switchTab('servicios')" id="tab-servicios" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Catálogo Servicios</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6">
+
+        <!-- ================= MÓDULO 1: GENERADOR DE COTIZACIÓN ================= -->
+        <section id="sec-cotizador" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 bg-white p-5 rounded-lg shadow space-y-4 border border-gray-200 no-print">
+                    <h2 class="text-lg font-bold text-gray-900 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-sliders text-yellow-600"></i> Datos de la Cotización</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">N° Cotización</label>
+                            <input type="text" id="quoteNum" value="000000170" class="w-full border rounded p-2 text-sm font-mono focus:ring-2 focus:ring-yellow-500" onchange="renderQuoteTable()">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Fecha Emisión</label>
+                            <input type="date" id="quoteDate" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-yellow-500" onchange="renderQuoteTable()">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-gray-600">Seleccionar Cliente (Nube)</label>
+                            <button onclick="switchTab('clientes')" class="text-xs text-yellow-600 hover:underline">+ Crear Nuevo</button>
+                        </div>
+                        <select id="clientSelect" onchange="loadSelectedClient()" class="w-full border rounded p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-yellow-500">
+                            <option value="">-- Seleccionar de la lista --</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2 border-t pt-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600">Razón Social / Nombre</label>
+                            <input type="text" id="clientName" placeholder="NOMBRE O RAZON SOCIAL" class="w-full border rounded p-2 text-sm uppercase" onchange="renderQuoteTable()">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600">RIF / C.I.</label>
+                                <input type="text" id="clientRif" placeholder="JXXXXXXXX" class="w-full border rounded p-2 text-sm uppercase" onchange="renderQuoteTable()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600">Teléfono</label>
+                                <input type="text" id="clientPhone" placeholder="0414XXXXXXX" class="w-full border rounded p-2 text-sm" onchange="renderQuoteTable()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600">Domicilio Fiscal</label>
+                            <textarea id="clientAddress" rows="2" placeholder="DIRECCION FISCAL COMPLETA" class="w-full border rounded p-2 text-sm uppercase" onchange="renderQuoteTable()"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-3 space-y-2 bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                        <label class="block text-xs font-bold text-gray-800 uppercase flex items-center gap-1"><i class="fa-solid fa-truck-fast text-yellow-600"></i> Cargar Paquete Mantenimiento Expreso</label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <select id="pkgSelect" class="w-full border rounded p-2 text-xs bg-white font-medium focus:ring-2 focus:ring-yellow-500">
+                                <option value="">-- Seleccionar Paquete de Modelo --</option>
+                                <option value="ET5">CAMIÓN ENCAVA ET-5 (Kit Mantenimiento)</option>
+                                <option value="VANTOANO">ENCAVA VAN TOANO / FOTON TOANO</option>
+                                <option value="EP1000">ENCAVA EP-1000</option>
+                            </select>
+                            <button onclick="addMaintenancePackage()" class="bg-yellow-600 text-white font-bold text-xs px-3 py-2 rounded hover:bg-yellow-700 transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-bolt"></i> Cargar Kit Completo a Cotización
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-3 space-y-3">
+                        <h3 class="text-xs font-bold uppercase text-gray-500">Agregar Ítems Individuales</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="quickRepuesto" class="border rounded p-2 text-xs bg-gray-50"><option value="">-- Cargar Repuesto --</option></select>
+                            <button onclick="addQuickRepuesto()" class="bg-gray-800 text-white text-xs px-2 py-2 rounded hover:bg-gray-700">+ Añadir Pieza</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="quickServicio" class="border rounded p-2 text-xs bg-gray-50"><option value="">-- Cargar Servicio --</option></select>
+                            <button onclick="addQuickServicio()" class="bg-gray-800 text-white text-xs px-2 py-2 rounded hover:bg-gray-700">+ Añadir Servicio</button>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4 flex flex-col gap-2">
+                        <button onclick="saveQuoteToCloud()" id="btnSaveCloud" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded font-bold hover:bg-blue-700 shadow flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Registrar Cotización en Google Sheets</button>
+                        <button onclick="generatePDF()" class="w-full bg-red-600 text-white py-2.5 px-4 rounded font-bold hover:bg-red-700 shadow flex items-center justify-center gap-2"><i class="fa-solid fa-file-pdf"></i> Descargar PDF Oficial</button>
+                        <button onclick="copyWhatsAppText()" class="w-full bg-green-600 text-white py-2.5 px-4 rounded font-bold hover:bg-green-700 shadow flex items-center justify-center gap-2"><i class="fa-brands fa-whatsapp"></i> Copiar Texto para WhatsApp</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7">
+                    <div class="bg-white p-6 sm:p-8 rounded-lg shadow border border-gray-300" id="quoteDoc">
+                        <div class="flex justify-between items-start border-b border-gray-300 pb-4 mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0">AB</div>
+                                <div class="text-xs text-gray-700 leading-tight">
+                                    <h2 class="font-bold text-sm text-gray-900">AEROTRUCKS BARCELONA, C.A.</h2>
+                                    <p class="font-semibold text-gray-600">RIF: J-503433256</p>
+                                    <p>Av. José Antonio Anzoátegui, Edif AEROTRUCKS BARCELONA, piso PB local 1</p>
+                                    <p>Via Aeropuerto Barcelona, Anzoátegui</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs uppercase font-bold text-gray-500">COTIZACIÓN</span>
+                                <h3 id="docNum" class="text-lg font-mono font-bold text-gray-900">000000170</h3>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 text-xs mb-6 gap-4 bg-gray-50 p-3 rounded border border-gray-200">
+                            <div>
+                                <p><span class="font-bold text-gray-700">Emisión:</span> <span id="docDate">-</span></p>
+                                <p><span class="font-bold text-gray-700">Condición de Pago:</span> Contado</p>
+                                <p class="mt-1"><span class="font-bold text-gray-700">Nombre / Razón Social:</span></p>
+                                <p id="docClientName" class="font-bold text-gray-900">-</p>
+                                <p><span class="font-bold text-gray-700">C.I. / RIF:</span> <span id="docClientRif">-</span></p>
+                                <p><span class="font-bold text-gray-700">Teléfono:</span> <span id="docClientPhone">-</span></p>
+                            </div>
+                            <div>
+                                <p><span class="font-bold text-gray-700">Domicilio Fiscal:</span></p>
+                                <p id="docClientAddress" class="text-gray-800 uppercase leading-snug">-</p>
+                            </div>
+                        </div>
+
+                        <table class="w-full text-xs text-left mb-6 border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-800 font-bold border-b border-gray-300">
+                                    <th class="py-2 px-2 w-10">Item</th>
+                                    <th class="py-2 px-2">Descripción</th>
+                                    <th class="py-2 px-2 w-12 text-center">Cant.</th>
+                                    <th class="py-2 px-2 w-12 text-center">U/M</th>
+                                    <th class="py-2 px-2 w-20 text-right">Precio ($)</th>
+                                    <th class="py-2 px-2 w-24 text-right">SubTotal ($)</th>
+                                    <th class="py-2 px-2 w-8 no-print"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody" class="divide-y divide-gray-200"></tbody>
+                        </table>
+
+                        <div class="mb-6 no-print">
+                            <button onclick="addEmptyRow()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded border border-gray-300">+ Agregar renglón libre</button>
+                        </div>
+
+                        <div class="flex justify-end border-t border-gray-300 pt-4">
+                            <div class="w-64 text-xs space-y-1.5">
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">Subtotal General:</span><span id="docSubtotal" class="font-mono font-bold">$0,00</span></div>
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">Descuento:</span><span class="font-mono">$0,00</span></div>
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">IVA (16%):</span><span id="docIva" class="font-mono font-bold">$0,00</span></div>
+                                <div class="flex justify-between border-t border-gray-400 pt-1 text-sm font-bold text-gray-900"><span>TOTAL VENTA ($):</span><span id="docTotal" class="font-mono">$0,00</span></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 border-t border-gray-200 pt-3 text-center text-xs text-gray-500 italic">Cotización válida por 2 días.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÓDULO 2: ORDEN DE SERVICIO EN BOLÍVARES (BCV) ================= -->
+        <section id="sec-ordenservicio" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200 space-y-6">
+                <div class="border-b pb-3 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-money-bill-transfer text-yellow-600"></i> Conversión a Orden de Servicio en Bolívares (Tasa BCV)
+                        </h2>
+                        <p class="text-xs text-gray-500">Convierte los montos actuales de la cotización a Bolívares según la tasa oficial BCV del día.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Tasa Oficial BCV (Bs. / USD)</label>
+                        <input type="number" step="0.0001" id="tasaBcv" value="45.50" oninput="calcularOrdenBs()" class="w-full border rounded p-2 text-sm font-bold font-mono bg-white focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Total Cotización USD</label>
+                        <input type="text" id="bsTotalUsdRef" readonly class="w-full border rounded p-2 text-sm font-bold font-mono bg-gray-100 text-gray-700" value="$0.00">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="copiarTextoOrdenBs()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-xs py-2.5 px-3 rounded shadow flex items-center justify-center gap-1">
+                            <i class="fa-brands fa-whatsapp"></i> Copiar Orden en Bs. para WhatsApp
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 sm:p-8 rounded-lg shadow border border-gray-300" id="ordenBsDoc">
+                    <div class="flex justify-between items-start border-b border-gray-300 pb-4 mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0">AB</div>
+                            <div class="text-xs text-gray-700 leading-tight">
+                                <h2 class="font-bold text-sm text-gray-900">AEROTRUCKS BARCELONA, C.A.</h2>
+                                <p class="font-semibold text-gray-600">RIF: J-503433256</p>
+                                <p>Av. José Antonio Anzoátegui, Edif AEROTRUCKS BARCELONA, piso PB local 1</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs uppercase font-bold text-gray-500">ORDEN DE SERVICIO (BS.)</span>
+                            <h3 id="bsDocNum" class="text-lg font-mono font-bold text-gray-900">000000170</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 text-xs mb-6 gap-4 bg-gray-50 p-3 rounded border border-gray-200">
+                        <div>
+                            <p><span class="font-bold text-gray-700">Fecha Factura / Pago:</span> <span id="bsDocDate">-</span></p>
+                            <p><span class="font-bold text-gray-700">Tasa BCV Aplicada:</span> <span id="bsDocTasa" class="font-mono font-bold text-blue-800">Bs. 0,00</span></p>
+                            <p class="mt-1"><span class="font-bold text-gray-700">Cliente:</span> <span id="bsDocClient" class="font-bold text-gray-900">-</span></p>
+                        </div>
+                        <div>
+                            <p><span class="font-bold text-gray-700">RIF / C.I.:</span> <span id="bsDocRif">-</span></p>
+                            <p><span class="font-bold text-gray-700">Teléfono:</span> <span id="bsDocPhone">-</span></p>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-xs text-left mb-6 border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-800 font-bold border-b border-gray-300">
+                                <th class="py-2 px-2 w-10">Item</th>
+                                <th class="py-2 px-2">Descripción</th>
+                                <th class="py-2 px-2 w-12 text-center">Cant.</th>
+                                <th class="py-2 px-2 w-24 text-right">P/U USD</th>
+                                <th class="py-2 px-2 w-32 text-right">SubTotal (Bs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordenBsTableBody" class="divide-y divide-gray-200"></tbody>
+                    </table>
+
+                    <div class="flex justify-end border-t border-gray-300 pt-4">
+                        <div class="w-72 text-xs space-y-1.5">
+                            <div class="flex justify-between"><span class="font-bold text-gray-600">Subtotal Bs.:</span><span id="bsDocSubtotal" class="font-mono font-bold">Bs. 0,00</span></div>
+                            <div class="flex justify-between"><span class="font-bold text-gray-600">IVA (16%) Bs.:</span><span id="bsDocIva" class="font-mono font-bold">Bs. 0,00</span></div>
+                            <div class="flex justify-between border-t border-gray-400 pt-1 text-sm font-bold text-gray-900"><span>TOTAL GENERAL (Bs.):</span><span id="bsDocTotal" class="font-mono text-blue-900">Bs. 0,00</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÓDULO 3: CALCULADORA DE PVP ================= -->
+        <section id="sec-calculadora" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200 space-y-6">
+                <div class="border-b pb-3">
+                    <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-yellow-600"></i> Calculadora de Márgenes y Precio de Venta (PVP)
+                    </h2>
+                </div>
+                <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-300 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Costo Base ($)</label>
+                            <input type="number" step="0.01" id="calcCosto" placeholder="0.00" oninput="calcularPVPDirecto()" class="w-full border rounded p-2 text-sm font-bold font-mono bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Margen de Ganancia (%)</label>
+                            <select id="calcMargen" onchange="calcularPVPDirecto()" class="w-full border rounded p-2 text-sm font-bold bg-white">
+                                <option value="30">30% Ganancia</option>
+                                <option value="40" selected>40% Ganancia</option>
+                                <option value="50">50% Ganancia</option>
+                            </select>
+                        </div>
+                        <div class="text-center p-3 bg-white rounded border border-yellow-400 flex flex-col justify-center">
+                            <span class="block text-xs text-gray-700 font-bold">PVP CALCULADO</span>
+                            <span id="resPVPFinal" class="text-lg font-black font-mono text-gray-900">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÓDULO 4: DIRECTORIO DE CLIENTES ================= -->
+        <section id="sec-clientes" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-users text-yellow-600"></i> Directorio de Clientes (Sincronizado con Sheets)</h2>
+                <form id="formClient" onsubmit="saveClient(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 bg-gray-50 p-4 rounded border">
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">Razón Social</label><input type="text" id="c_name" required class="w-full border rounded p-2 text-sm uppercase"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">RIF / C.I.</label><input type="text" id="c_rif" required class="w-full border rounded p-2 text-sm uppercase"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">Teléfono</label><input type="text" id="c_phone" class="w-full border rounded p-2 text-sm"></div>
+                    <div class="md:col-span-3"><label class="block text-xs font-semibold text-gray-600 mb-1">Domicilio Fiscal</label><input type="text" id="c_address" required class="w-full border rounded p-2 text-sm uppercase"></div>
+                    <div class="md:col-span-3 flex justify-end"><button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold px-4 py-2 rounded text-sm">Guardar Cliente en la Nube</button></div>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border">
+                        <thead class="bg-gray-100 font-bold text-gray-700">
+                            <tr><th class="p-2 border">Razón Social</th><th class="p-2 border">RIF</th><th class="p-2 border">Teléfono</th><th class="p-2 border">Domicilio Fiscal</th><th class="p-2 border w-16">Acción</th></tr>
+                        </thead>
+                        <tbody id="clientsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÓDULO 5: CATÁLOGO DE REPUESTOS ================= -->
+        <section id="sec-repuestos" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-yellow-600"></i> Catálogo de Repuestos y Piezas (Sincronizado con Sheets)</h2>
+                <form id="formRepuesto" onsubmit="saveRepuesto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border">
+                    <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-600 mb-1">Descripción</label><input type="text" id="r_desc" required class="w-full border rounded p-2 text-sm uppercase"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">U/M</label><input type="text" id="r_um" value="pza" required class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">Precio de Venta ($)</label><input type="number" step="0.01" id="r_price" required class="w-full border rounded p-2 text-sm"></div>
+                    <div class="md:col-span-4 flex justify-end"><button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold px-4 py-2 rounded text-sm">Registrar Pieza en la Nube</button></div>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border">
+                        <thead class="bg-gray-100 font-bold text-gray-700">
+                            <tr><th class="p-2 border">Descripción</th><th class="p-2 border">U/M</th><th class="p-2 border">Precio USD</th><th class="p-2 border w-32">Acciones</th></tr>
+                        </thead>
+                        <tbody id="repuestosTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÓDULO 6: CATÁLOGO DE SERVICIOS ================= -->
+        <section id="sec-servicios" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-wrench text-yellow-600"></i> Catálogo de Servicios (Sincronizado con Sheets)</h2>
+                <form id="formServicio" onsubmit="saveServicio(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded border">
+                    <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-600 mb-1">Servicio</label><input type="text" id="s_desc" required class="w-full border rounded p-2 text-sm uppercase"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">U/M</label><input type="text" id="s_um" value="ser" required class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-gray-600 mb-1">Tarifa ($)</label><input type="number" step="0.01" id="s_price" required class="w-full border rounded p-2 text-sm"></div>
+                    <div class="md:col-span-4 flex justify-end"><button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold px-4 py-2 rounded text-sm">Registrar Servicio en la Nube</button></div>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border">
+                        <thead class="bg-gray-100 font-bold text-gray-700">
+                            <tr><th class="p-2 border">Servicio</th><th class="p-2 border">U/M</th><th class="p-2 border">Tarifa USD</th><th class="p-2 border w-32">Acciones</th></tr>
+                        </thead>
+                        <tbody id="serviciosTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr7_Cxwvooum5OFBpcq-vShM_X8G-Nx3AWd4elxKH_48BUrfWa0CCYSkj8DPCKHRaR/exec";
+
+        let dbClients = [];
+        let dbRepuestos = [];
+        let dbServicios = [];
+        let currentQuoteItems = [];
+
+        const dbPackages = {
+            "ET5": [
+                { desc: "FILTRO DE ACEITE F3.8 - ET-5", qty: 1, um: "pza", price: 75.00 },
+                { desc: "ACEITE 15W-40 DIESEL VALVOLINE", qty: 10, um: "pza", price: 21.00 },
+                { desc: "FILTRO GASOIL ET-5", qty: 1, um: "pza", price: 69.00 },
+                { desc: "FILTRO DE AIRE ET-5", qty: 1, um: "pza", price: 108.00 },
+                { desc: "MANO DE OBRA", qty: 1, um: "ser", price: 120.00 }
+            ],
+            "VANTOANO": [
+                { desc: "FILTRO DE ACEITE F2.8 - TOANO", qty: 1, um: "pza", price: 73.50 },
+                { desc: "ACEITE 15W-40 DIESEL VALVOLINE", qty: 6, um: "lts", price: 22.75 },
+                { desc: "MANO DE OBRA", qty: 1, um: "ser", price: 120.00 }
+            ],
+            "EP1000": [
+                { desc: "FILTRO DE ACEITE F2.8 - EP-1000", qty: 1, um: "pza", price: 66.75 },
+                { desc: "MANO DE OBRA", qty: 1, um: "ser", price: 120.00 }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quoteDate').value = today;
+            renderQuoteTable();
+            loadCloudDatabase();
+        });
+
+        function updateCloudStatus(state, text) {
+            const el = document.getElementById('cloudStatus');
+            if (state === 'loading') {
+                el.className = "text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-yellow-600 text-yellow-400 flex items-center gap-1.5";
+                el.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> ${text}`;
+            } else if (state === 'ok') {
+                el.className = "text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-green-600 text-green-400 flex items-center gap-1.5";
+                el.innerHTML = `<i class="fa-solid fa-cloud-check"></i> ${text}`;
+            } else {
+                el.className = "text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-red-600 text-red-400 flex items-center gap-1.5";
+                el.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${text}`;
+            }
+        }
+
+        async function loadCloudDatabase() {
+            if (GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
+                updateCloudStatus('error', 'Falta URL de Google Script');
+                return;
+            }
+            updateCloudStatus('loading', 'Cargando datos de Sheets...');
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAll`);
+                const data = await response.json();
+                dbClients = data.clients || [];
+                dbRepuestos = (data.repuestos || []).map(r => ({ ...r, price: parseFloat(r.price) || 0 }));
+                dbServicios = (data.servicios || []).map(s => ({ ...s, price: parseFloat(s.price) || 0 }));
+                
+                renderClients();
+                renderRepuestos();
+                renderServicios();
+                populateSelects();
+                updateCloudStatus('ok', 'Conectado a Google Sheets');
+            } catch (error) {
+                console.error(error);
+                updateCloudStatus('error', 'Error de conexión');
+            }
+        }
+
+        async function sendCloudAction(payload) {
+            if (GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
+                alert("Configura primero la URL de Google Apps Script en el código.");
+                return false;
+            }
+            updateCloudStatus('loading', 'Guardando en la nube...');
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                updateCloudStatus('ok', 'Sincronizado');
+                return true;
+            } catch (error) {
+                console.error(error);
+                updateCloudStatus('error', 'Error al guardar');
+                return false;
+            }
+        }
+
+        async function saveQuoteToCloud() {
+            if (currentQuoteItems.length === 0) {
+                alert("La cotización está vacía.");
+                return;
+            }
+            let subtotal = 0;
+            currentQuoteItems.forEach(i => subtotal += (i.qty * i.price));
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            const payload = {
+                action: 'saveCotizacion',
+                data: {
+                    numero: document.getElementById('quoteNum').value,
+                    fecha: document.getElementById('docDate').innerText,
+                    cliente: document.getElementById('clientName').value || 'SIN NOMBRE',
+                    rif: document.getElementById('clientRif').value || '-',
+                    subtotal: subtotal.toFixed(2),
+                    iva: iva.toFixed(2),
+                    total_usd: total.toFixed(2),
+                    items: currentQuoteItems
+                }
+            };
+
+            const btn = document.getElementById('btnSaveCloud');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+            
+            const ok = await sendCloudAction(payload);
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Registrar Cotización en Google Sheets`;
+            if (ok) alert("¡Cotización guardada exitosamente en la pestaña 'Cotizaciones' de Google Sheets!");
+        }
+
+        function switchTab(tabName) {
+            ['cotizador', 'ordenservicio', 'calculadora', 'clientes', 'repuestos', 'servicios'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('tab-active');
+                document.getElementById(`tab-${t}`).classList.add('text-gray-400');
+            });
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('tab-active');
+            document.getElementById(`tab-${tabName}`).classList.remove('text-gray-400');
+            if(tabName === 'ordenservicio') { calcularOrdenBs(); }
+        }
+
+        function resetCotizadorClean() {
+            if(confirm('¿Desea limpiar todos los campos para iniciar una nueva cotización limpia?')) {
+                currentQuoteItems = [];
+                document.getElementById('clientSelect').value = "";
+                document.getElementById('clientName').value = "";
+                document.getElementById('clientRif').value = "";
+                document.getElementById('clientPhone').value = "";
+                document.getElementById('clientAddress').value = "";
+                document.getElementById('quoteDate').value = new Date().toISOString().split('T')[0];
+                renderQuoteTable();
+            }
+        }
+
+        function renderQuoteTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+
+            if(currentQuoteItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-400 italic">Cotización vacía. Agregue un paquete o ítems desde el panel izquierdo.</td></tr>`;
+            }
+
+            currentQuoteItems.forEach((item, index) => {
+                const itemSubtotal = item.qty * item.price;
+                subtotal += itemSubtotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-2 text-center font-semibold text-gray-500">${index + 1}</td>
+                    <td class="py-2 px-2"><input type="text" value="${item.desc}" onchange="updateItem(${index}, 'desc', this.value)" class="w-full border-b bg-transparent font-medium uppercase focus:outline-none"></td>
+                    <td class="py-2 px-2 text-center"><input type="number" value="${item.qty}" min="1" onchange="updateItem(${index}, 'qty', this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="py-2 px-2 text-center"><input type="text" value="${item.um}" onchange="updateItem(${index}, 'um', this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="py-2 px-2 text-right font-mono"><input type="number" step="0.01" value="${item.price.toFixed(2)}" onchange="updateItem(${index}, 'price', this.value)" class="w-20 text-right border rounded"></td>
+                    <td class="py-2 px-2 text-right font-mono font-bold">$${itemSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
+                    <td class="py-2 px-2 text-center no-print"><button onclick="removeItem(${index})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            document.getElementById('docNum').innerText = document.getElementById('quoteNum').value;
+            const rawDate = document.getElementById('quoteDate').value;
+            if(rawDate) {
+                const [y, m, d] = rawDate.split('-');
+                document.getElementById('docDate').innerText = `${d}/${m}/${y}`;
+            }
+            document.getElementById('docClientName').innerText = document.getElementById('clientName').value || '-';
+            document.getElementById('docClientRif').innerText = document.getElementById('clientRif').value || '-';
+            document.getElementById('docClientPhone').innerText = document.getElementById('clientPhone').value || '-';
+            document.getElementById('docClientAddress').innerText = document.getElementById('clientAddress').value || '-';
+
+            document.getElementById('docSubtotal').innerText = `$${subtotal.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('docIva').innerText = `$${iva.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('docTotal').innerText = `$${total.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+        }
+
+        function updateItem(index, field, value) {
+            if (field === 'qty' || field === 'price') value = parseFloat(value) || 0;
+            currentQuoteItems[index][field] = value;
+            renderQuoteTable();
+        }
+
+        function removeItem(index) {
+            currentQuoteItems.splice(index, 1);
+            renderQuoteTable();
+        }
+
+        function addEmptyRow() {
+            currentQuoteItems.push({ desc: "", qty: 1, um: "pza", price: 0.00 });
+            renderQuoteTable();
+        }
+
+        function addMaintenancePackage() {
+            const pkgKey = document.getElementById('pkgSelect').value;
+            if (!pkgKey) { alert('Por favor selecciona un modelo de paquete.'); return; }
+            const itemsToAdd = dbPackages[pkgKey];
+            if (itemsToAdd) {
+                currentQuoteItems = [];
+                itemsToAdd.forEach(item => { currentQuoteItems.push({ ...item }); });
+                renderQuoteTable();
+            }
+        }
+
+        function calcularOrdenBs() {
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            let subtotalUsd = 0;
+            currentQuoteItems.forEach(i => subtotalUsd += (i.qty * i.price));
+            const ivaUsd = subtotalUsd * 0.16;
+            const totalUsd = subtotalUsd + ivaUsd;
+
+            document.getElementById('bsTotalUsdRef').value = `$${totalUsd.toFixed(2)}`;
+            document.getElementById('bsDocNum').innerText = document.getElementById('quoteNum').value;
+            document.getElementById('bsDocDate').innerText = document.getElementById('docDate').innerText;
+            document.getElementById('bsDocTasa').innerText = `Bs. ${tasa.toFixed(4)}`;
+            document.getElementById('bsDocClient').innerText = document.getElementById('clientName').value || '-';
+            document.getElementById('bsDocRif').innerText = document.getElementById('clientRif').value || '-';
+            document.getElementById('bsDocPhone').innerText = document.getElementById('clientPhone').value || '-';
+
+            const tbody = document.getElementById('ordenBsTableBody');
+            tbody.innerHTML = '';
+            let subtotalBs = 0;
+
+            currentQuoteItems.forEach((item, index) => {
+                const itemSubUsd = item.qty * item.price;
+                const itemSubBs = itemSubUsd * tasa;
+                subtotalBs += itemSubBs;
+
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="py-2 px-2 text-center font-semibold text-gray-500">${index + 1}</td>
+                        <td class="py-2 px-2 uppercase">${item.desc}</td>
+                        <td class="py-2 px-2 text-center">${item.qty} ${item.um}</td>
+                        <td class="py-2 px-2 text-right font-mono">$${item.price.toFixed(2)}</td>
+                        <td class="py-2 px-2 text-right font-mono font-bold">Bs. ${itemSubBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+
+            const ivaBs = subtotalBs * 0.16;
+            const totalBs = subtotalBs + ivaBs;
+
+            document.getElementById('bsDocSubtotal').innerText = `Bs. ${subtotalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('bsDocIva').innerText = `Bs. ${ivaBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('bsDocTotal').innerText = `Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+        }
+
+        function copiarTextoOrdenBs() {
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            let subtotalUsd = 0;
+            let itemsText = "";
+
+            currentQuoteItems.forEach((item, index) => {
+                const subUsd = item.qty * item.price;
+                const subBs = subUsd * tasa;
+                subtotalUsd += subUsd;
+                itemsText += `${index + 1}. ${item.desc} (${item.qty} ${item.um}) - SubTotal: Bs. ${subBs.toFixed(2).replace('.', ',')}\n`;
+            });
+
+            const subBsTotal = subtotalUsd * tasa;
+            const ivaBs = subBsTotal * 0.16;
+            const totalBs = subBsTotal + ivaBs;
+
+            const text = `AEROTRUCKS BARCELONA, C.A. - J-503433256
+ORDEN DE SERVICIO EN BOLIVARES
+Fecha: ${document.getElementById('docDate').innerText}
+Tasa BCV: Bs. ${tasa.toFixed(4)}
+Cliente: ${document.getElementById('clientName').value}
+RIF/C.I.: ${document.getElementById('clientRif').value}
+
+${itemsText}
+Subtotal Bs.: Bs. ${subBsTotal.toFixed(2).replace('.', ',')}
+IVA 16% Bs.: Bs. ${ivaBs.toFixed(2).replace('.', ',')}
+TOTAL GENERAL Bs.: Bs. ${totalBs.toFixed(2).replace('.', ',')}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('¡Orden de servicio en Bolívares copiada para WhatsApp!');
+            });
+        }
+
+        function generatePDF() {
+            const element = document.getElementById('quoteDoc');
+            const quoteNum = document.getElementById('quoteNum').value;
+            const opt = {
+                margin:       [0.2, 0.2, 0.2, 0.2],
+                filename:     `cotizacion_${quoteNum}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, letterRendering: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save().catch(() => {
+                window.print();
+            });
+        }
+
+        function copyWhatsAppText() {
+            const num = document.getElementById('quoteNum').value;
+            const dateStr = document.getElementById('docDate').innerText;
+            const client = document.getElementById('clientName').value;
+            const rif = document.getElementById('clientRif').value;
+            const phone = document.getElementById('clientPhone').value;
+            const address = document.getElementById('clientAddress').value;
+
+            let subtotal = 0;
+            let itemsText = "";
+
+            currentQuoteItems.forEach((item, index) => {
+                const itemSub = item.qty * item.price;
+                subtotal += itemSub;
+                itemsText += `${index + 1}. ${item.desc} (${item.qty} ${item.um}) - P/U: $${item.price.toFixed(2).replace('.', ',')} - Subtotal: $${itemSub.toFixed(2).replace('.', ',')}\n`;
+            });
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            const text = `AEROTRUCKS BARCELONA, C.A. - J-503433256
+COTIZACION N° ${num}
+
+Fecha Emisión: ${dateStr}
+Condición de Pago: Contado
+Razón Social: ${client}
+R.I.F. / C.I.: ${rif}
+Domicilio Fiscal: ${address}
+Teléfono: ${phone}
+
+DETALLE DE PRODUCTOS Y SERVICIOS:
+${itemsText}
+Subtotal General USD: $${subtotal.toFixed(2).replace('.', ',')}
+IVA 16%: $${iva.toFixed(2).replace('.', ',')}
+TOTAL A PAGAR USD: $${total.toFixed(2).replace('.', ',')}
+
+Cotización válida por 2 días. ¡Gracias por preferirnos!`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('¡Texto limpio optimizado copiado al portapapeles listo para WhatsApp!');
+            });
+        }
+
+        function populateSelects() {
+            const clientSelect = document.getElementById('clientSelect');
+            clientSelect.innerHTML = '<option value="">-- Seleccionar de la lista --</option>' + 
+                dbClients.map(c => `<option value="${c.id}">${c.name} (${c.rif})</option>`).join('');
+
+            const repSelect = document.getElementById('quickRepuesto');
+            repSelect.innerHTML = '<option value="">-- Cargar Repuesto --</option>' + 
+                dbRepuestos.map(r => `<option value="${r.id}">${r.desc} - $${r.price.toFixed(2)}</option>`).join('');
+
+            const srvSelect = document.getElementById('quickServicio');
+            srvSelect.innerHTML = '<option value="">-- Cargar Servicio --</option>' + 
+                dbServicios.map(s => `<option value="${s.id}">${s.desc} - $${s.price.toFixed(2)}</option>`).join('');
+        }
+
+        function loadSelectedClient() {
+            const id = document.getElementById('clientSelect').value;
+            const client = dbClients.find(c => String(c.id) === String(id));
+            if (client) {
+                document.getElementById('clientName').value = client.name;
+                document.getElementById('clientRif').value = client.rif;
+                document.getElementById('clientPhone').value = client.phone || '';
+                document.getElementById('clientAddress').value = client.address;
+                renderQuoteTable();
+            }
+        }
+
+        async function saveClient(e) {
+            e.preventDefault();
+            const newClient = {
+                id: Date.now(),
+                name: document.getElementById('c_name').value.toUpperCase(),
+                rif: document.getElementById('c_rif').value.toUpperCase(),
+                phone: document.getElementById('c_phone').value,
+                address: document.getElementById('c_address').value.toUpperCase()
+            };
+            dbClients.push(newClient);
+            document.getElementById('formClient').reset();
+            renderClients();
+            populateSelects();
+            await sendCloudAction({ action: 'saveClient', data: newClient });
+        }
+
+        function renderClients() {
+            const tbody = document.getElementById('clientsTableBody');
+            tbody.innerHTML = dbClients.map(c => `
+                <tr class="border-b">
+                    <td class="p-2 font-bold">${c.name}</td>
+                    <td class="p-2">${c.rif}</td>
+                    <td class="p-2">${c.phone || '-'}</td>
+                    <td class="p-2">${c.address}</td>
+                    <td class="p-2"><button onclick="deleteClient(${c.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteClient(id) {
+            dbClients = dbClients.filter(c => String(c.id) !== String(id));
+            renderClients();
+            populateSelects();
+            await sendCloudAction({ action: 'deleteClient', id: id });
+        }
+
+        async function saveRepuesto(e) {
+            e.preventDefault();
+            const item = {
+                id: Date.now(),
+                desc: document.getElementById('r_desc').value.toUpperCase(),
+                um: document.getElementById('r_um').value,
+                price: parseFloat(document.getElementById('r_price').value) || 0
+            };
+            dbRepuestos.push(item);
+            document.getElementById('formRepuesto').reset();
+            renderRepuestos();
+            populateSelects();
+            await sendCloudAction({ action: 'saveRepuesto', data: item });
+        }
+
+        function renderRepuestos() {
+            const tbody = document.getElementById('repuestosTableBody');
+            tbody.innerHTML = dbRepuestos.map(r => `
+                <tr class="border-b">
+                    <td class="p-2 font-medium">${r.desc}</td>
+                    <td class="p-2">${r.um}</td>
+                    <td class="p-2 font-mono font-bold">$${r.price.toFixed(2)}</td>
+                    <td class="p-2"><button onclick="deleteRepuesto(${r.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteRepuesto(id) {
+            dbRepuestos = dbRepuestos.filter(r => String(r.id) !== String(id));
+            renderRepuestos();
+            populateSelects();
+            await sendCloudAction({ action: 'deleteRepuesto', id: id });
+        }
+
+        function addQuickRepuesto() {
+            const id = document.getElementById('quickRepuesto').value;
+            const item = dbRepuestos.find(r => String(r.id) === String(id));
+            if(item) {
+                currentQuoteItems.push({ desc: item.desc, qty: 1, um: item.um, price: item.price });
+                renderQuoteTable();
+            }
+        }
+
+        async function saveServicio(e) {
+            e.preventDefault();
+            const item = {
+                id: Date.now(),
+                desc: document.getElementById('s_desc').value.toUpperCase(),
+                um: document.getElementById('s_um').value,
+                price: parseFloat(document.getElementById('s_price').value) || 0
+            };
+            dbServicios.push(item);
+            document.getElementById('formServicio').reset();
+            renderServicios();
+            populateSelects();
+            await sendCloudAction({ action: 'saveServicio', data: item });
+        }
+
+        function renderServicios() {
+            const tbody = document.getElementById('serviciosTableBody');
+            tbody.innerHTML = dbServicios.map(s => `
+                <tr class="border-b">
+                    <td class="p-2 font-medium">${s.desc}</td>
+                    <td class="p-2">${s.um}</td>
+                    <td class="p-2 font-mono font-bold">$${s.price.toFixed(2)}</td>
+                    <td class="p-2"><button onclick="deleteServicio(${s.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteServicio(id) {
+            dbServicios = dbServicios.filter(s => String(s.id) !== String(id));
+            renderServicios();
+            populateSelects();
+            await sendCloudAction({ action: 'deleteServicio', id: id });
+        }
+
+        function addQuickServicio() {
+            const id = document.getElementById('quickServicio').value;
+            const item = dbServicios.find(s => String(s.id) === String(id));
+            if(item) {
+                currentQuoteItems.push({ desc: item.desc, qty: 1, um: item.um, price: item.price });
+                renderQuoteTable();
+            }
+        }
+
+        function calcularPVPDirecto() {
+            const costo = parseFloat(document.getElementById('calcCosto').value) || 0;
+            const margen = parseFloat(document.getElementById('calcMargen').value) || 40;
+            const pvp = costo * (1 + (margen / 100));
+            document.getElementById('resPVPFinal').innerText = `$${pvp.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
