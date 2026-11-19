@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aerotrucks Barcelona, C.A. - Cotizador Comercial v12 Cloud</title>
+    <title>Aerotrucks Barcelona, C.A. - Cotizador Comercial v13.10 Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .tab-active { border-bottom: 3px solid #EAB308; color: #EAB308; font-weight: bold; }
-        @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
+        @media print {
+            body * { visibility: hidden; }
+            #pdfPreviewDoc, #pdfPreviewDoc * { visibility: visible; }
+            #pdfPreviewDoc { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
@@ -17,16 +22,19 @@
     <header class="bg-gray-900 text-white shadow-md no-print">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center font-black text-gray-900 text-xl">AB</div>
+                <img src="LogoAeroTruckspeq.png" alt="Logo Aerotrucks" onerror="this.outerHTML='<div class=\'w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center font-black text-gray-900 text-xl\'>AB</div>'" class="w-12 h-12 object-contain rounded-full bg-white p-0.5 shadow">
                 <div>
                     <h1 class="text-xl font-bold text-yellow-500">AEROTRUCKS BARCELONA, C.A.</h1>
-                    <p class="text-xs text-gray-400">RIF: J-503433256 • Sistema de Cotizaciones (v12 Cloud)</p>
+                    <p class="text-xs text-gray-400">RIF: J-503433256 • Sistema de Cotizaciones (v13.10 Cloud)</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
                 <span id="cloudStatus" class="text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700 text-yellow-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-cloud-arrow-down fa-bounce"></i> Sincronizando...
                 </span>
+                <button onclick="loadCloudDatabase()" title="Forzar recarga desde Google Sheets" class="text-xs bg-gray-800 hover:bg-gray-700 px-2.5 py-1.5 rounded-full border border-gray-700 text-gray-300 transition">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
                 <span class="text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700 text-gray-300"><i class="fa-solid fa-calculator text-yellow-500 mr-1"></i> IVA: 16%</span>
                 <button onclick="resetCotizadorClean()" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded font-bold transition flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> Nueva</button>
             </div>
@@ -35,6 +43,7 @@
         <nav class="bg-gray-800 border-t border-gray-700 px-4">
             <div class="max-w-7xl mx-auto flex space-x-6 text-sm overflow-x-auto">
                 <button onclick="switchTab('cotizador')" id="tab-cotizador" class="py-3 px-2 tab-active transition flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar"></i> Cotizador</button>
+                <button onclick="switchTab('pdfview')" id="tab-pdfview" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-file-pdf text-red-500"></i> Vista Previa PDF & Descarga</button>
                 <button onclick="switchTab('ordenservicio')" id="tab-ordenservicio" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer text-yellow-400"></i> Orden de Servicio (Bs.)</button>
                 <button onclick="switchTab('calculadora')" id="tab-calculadora" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-calculator text-yellow-400"></i> Calculadora PVP</button>
                 <button onclick="switchTab('clientes')" id="tab-clientes" class="py-3 px-2 text-gray-400 hover:text-gray-200 transition flex items-center gap-2"><i class="fa-solid fa-address-book"></i> Clientes</button>
@@ -120,7 +129,7 @@
 
                     <div class="border-t pt-4 flex flex-col gap-2">
                         <button onclick="saveQuoteToCloud()" id="btnSaveCloud" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded font-bold hover:bg-blue-700 shadow flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Registrar Cotización en Google Sheets</button>
-                        <button onclick="generatePDF()" class="w-full bg-red-600 text-white py-2.5 px-4 rounded font-bold hover:bg-red-700 shadow flex items-center justify-center gap-2"><i class="fa-solid fa-file-pdf"></i> Descargar PDF Oficial</button>
+                        <button onclick="generatePDF(this)" class="w-full bg-red-600 text-white py-2.5 px-4 rounded font-bold hover:bg-red-700 shadow flex items-center justify-center gap-2"><i class="fa-solid fa-file-pdf"></i> Descargar PDF Oficial</button>
                         <button onclick="copyWhatsAppText()" class="w-full bg-green-600 text-white py-2.5 px-4 rounded font-bold hover:bg-green-700 shadow flex items-center justify-center gap-2"><i class="fa-brands fa-whatsapp"></i> Copiar Texto para WhatsApp</button>
                     </div>
                 </div>
@@ -129,7 +138,7 @@
                     <div class="bg-white p-6 sm:p-8 rounded-lg shadow border border-gray-300" id="quoteDoc">
                         <div class="flex justify-between items-start border-b border-gray-300 pb-4 mb-4">
                             <div class="flex items-center space-x-4">
-                                <div class="w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0">AB</div>
+                                <img src="LogoAeroTruckspeq.png" alt="Logo Aerotrucks" onerror="this.outerHTML='<div class=\'w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0\'>AB</div>'" class="w-16 h-16 object-contain flex-shrink-0">
                                 <div class="text-xs text-gray-700 leading-tight">
                                     <h2 class="font-bold text-sm text-gray-900">AEROTRUCKS BARCELONA, C.A.</h2>
                                     <p class="font-semibold text-gray-600">RIF: J-503433256</p>
@@ -192,6 +201,86 @@
             </div>
         </section>
 
+        <!-- ================= MÓDULO: VISTA PREVIA PDF & DESCARGA ================= -->
+        <section id="sec-pdfview" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200 space-y-6">
+                <div class="border-b pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-red-600"></i> Vista Previa en PDF & Descarga Oficial
+                        </h2>
+                        <p class="text-xs text-gray-500">Visualiza exactamente cómo lucirá el documento PDF oficial antes de guardarlo en tu dispositivo.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="generatePDF(this)" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-4 rounded shadow flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Descargar PDF Oficial
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenedor de la Vista Previa -->
+                <div class="bg-gray-200 p-4 sm:p-8 rounded-lg flex justify-center items-center overflow-x-auto">
+                    <div class="bg-white p-8 rounded shadow-2xl border border-gray-300 w-[794px] min-h-[1123px] text-gray-800 text-xs font-sans relative" id="pdfPreviewDoc">
+                        <div class="flex justify-between items-start border-b border-gray-300 pb-4 mb-4">
+                            <div class="flex items-center space-x-4">
+                                <img src="LogoAeroTruckspeq.png" alt="Logo Aerotrucks" onerror="this.outerHTML='<div class=\'w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0\'>AB</div>'" class="w-16 h-16 object-contain flex-shrink-0">
+                                <div class="text-xs text-gray-700 leading-tight">
+                                    <h2 class="font-bold text-sm text-gray-900">AEROTRUCKS BARCELONA, C.A.</h2>
+                                    <p class="font-semibold text-gray-600">RIF: J-503433256</p>
+                                    <p>Av. José Antonio Anzoátegui, Edif AEROTRUCKS BARCELONA, piso PB local 1</p>
+                                    <p>Via Aeropuerto Barcelona, Anzoátegui</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs uppercase font-bold text-gray-500">COTIZACIÓN</span>
+                                <h3 id="prevDocNum" class="text-lg font-mono font-bold text-gray-900">000000170</h3>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 text-xs mb-6 gap-4 bg-gray-50 p-3 rounded border border-gray-200">
+                            <div>
+                                <p><span class="font-bold text-gray-700">Emisión:</span> <span id="prevDocDate">-</span></p>
+                                <p><span class="font-bold text-gray-700">Condición de Pago:</span> Contado</p>
+                                <p class="mt-1"><span class="font-bold text-gray-700">Nombre / Razón Social:</span></p>
+                                <p id="prevDocClientName" class="font-bold text-gray-900">-</p>
+                                <p><span class="font-bold text-gray-700">C.I. / RIF:</span> <span id="prevDocClientRif">-</span></p>
+                                <p><span class="font-bold text-gray-700">Teléfono:</span> <span id="prevDocClientPhone">-</span></p>
+                            </div>
+                            <div>
+                                <p><span class="font-bold text-gray-700">Domicilio Fiscal:</span></p>
+                                <p id="prevDocClientAddress" class="text-gray-800 uppercase leading-snug">-</p>
+                            </div>
+                        </div>
+
+                        <table class="w-full text-xs text-left mb-6 border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-800 font-bold border-b border-gray-300">
+                                    <th class="py-2 px-2 w-10">Item</th>
+                                    <th class="py-2 px-2">Descripción</th>
+                                    <th class="py-2 px-2 w-12 text-center">Cant.</th>
+                                    <th class="py-2 px-2 w-12 text-center">U/M</th>
+                                    <th class="py-2 px-2 w-20 text-right">Precio ($)</th>
+                                    <th class="py-2 px-2 w-24 text-right">SubTotal ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prevItemsTableBody" class="divide-y divide-gray-200"></tbody>
+                        </table>
+
+                        <div class="flex justify-end border-t border-gray-300 pt-4">
+                            <div class="w-64 text-xs space-y-1.5">
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">Subtotal General:</span><span id="prevDocSubtotal" class="font-mono font-bold">$0,00</span></div>
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">Descuento:</span><span class="font-mono">$0,00</span></div>
+                                <div class="flex justify-between"><span class="font-bold text-gray-600">IVA (16%):</span><span id="prevDocIva" class="font-mono font-bold">$0,00</span></div>
+                                <div class="flex justify-between border-t border-gray-400 pt-1 text-sm font-bold text-gray-900"><span>TOTAL VENTA ($):</span><span id="prevDocTotal" class="font-mono">$0,00</span></div>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-8 left-8 right-8 border-t border-gray-200 pt-3 text-center text-xs text-gray-500 italic">Cotización válida por 2 días.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ================= MÓDULO 2: ORDEN DE SERVICIO EN BOLÍVARES (BCV) ================= -->
         <section id="sec-ordenservicio" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-lg shadow border border-gray-200 space-y-6">
@@ -223,7 +312,7 @@
                 <div class="bg-white p-6 sm:p-8 rounded-lg shadow border border-gray-300" id="ordenBsDoc">
                     <div class="flex justify-between items-start border-b border-gray-300 pb-4 mb-4">
                         <div class="flex items-center space-x-4">
-                            <div class="w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0">AB</div>
+                            <img src="LogoAeroTruckspeq.png" alt="Logo Aerotrucks" onerror="this.outerHTML='<div class=\'w-16 h-16 bg-yellow-500 rounded flex items-center justify-center font-black text-gray-900 text-2xl flex-shrink-0\'>AB</div>'" class="w-16 h-16 object-contain flex-shrink-0">
                             <div class="text-xs text-gray-700 leading-tight">
                                 <h2 class="font-bold text-sm text-gray-900">AEROTRUCKS BARCELONA, C.A.</h2>
                                 <p class="font-semibold text-gray-600">RIF: J-503433256</p>
@@ -417,31 +506,50 @@
         }
 
         async function loadCloudDatabase() {
-            if (GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
                 updateCloudStatus('error', 'Falta URL de Google Script');
                 return;
             }
             updateCloudStatus('loading', 'Cargando datos de Sheets...');
             try {
-                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAll`);
-                const data = await response.json();
-                dbClients = data.clients || [];
-                dbRepuestos = (data.repuestos || []).map(r => ({ ...r, price: parseFloat(r.price) || 0 }));
-                dbServicios = (data.servicios || []).map(s => ({ ...s, price: parseFloat(s.price) || 0 }));
+                const separator = GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?';
+                const url = `${GOOGLE_SCRIPT_URL}${separator}action=getAll&_t=${Date.now()}`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const textData = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(textData);
+                } catch (parseErr) {
+                    console.error("Respuesta no válida de Google Apps Script:", textData.substring(0, 300));
+                    throw new Error("Respuesta inválida del servidor");
+                }
+                
+                dbClients = Array.isArray(data.clients) ? data.clients : [];
+                dbRepuestos = Array.isArray(data.repuestos) ? data.repuestos.map(r => ({ ...r, price: parseFloat(r.price) || 0 })) : [];
+                dbServicios = Array.isArray(data.servicios) ? data.servicios.map(s => ({ ...s, price: parseFloat(s.price) || 0 })) : [];
                 
                 renderClients();
                 renderRepuestos();
                 renderServicios();
                 populateSelects();
-                updateCloudStatus('ok', 'Conectado a Google Sheets');
+                updateCloudStatus('ok', `Conectado (${dbClients.length} cli / ${dbRepuestos.length} rep)`);
             } catch (error) {
-                console.error(error);
+                console.error("Error cargando base de datos:", error);
                 updateCloudStatus('error', 'Error de conexión');
             }
         }
 
         async function sendCloudAction(payload) {
-            if (GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("TU_URL_AQUI")) {
                 alert("Configura primero la URL de Google Apps Script en el código.");
                 return false;
             }
@@ -450,7 +558,7 @@
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
                 updateCloudStatus('ok', 'Sincronizado');
@@ -497,7 +605,7 @@
         }
 
         function switchTab(tabName) {
-            ['cotizador', 'ordenservicio', 'calculadora', 'clientes', 'repuestos', 'servicios'].forEach(t => {
+            ['cotizador', 'pdfview', 'ordenservicio', 'calculadora', 'clientes', 'repuestos', 'servicios'].forEach(t => {
                 document.getElementById(`sec-${t}`).classList.add('hidden');
                 document.getElementById(`tab-${t}`).classList.remove('tab-active');
                 document.getElementById(`tab-${t}`).classList.add('text-gray-400');
@@ -506,6 +614,7 @@
             document.getElementById(`tab-${tabName}`).classList.add('tab-active');
             document.getElementById(`tab-${tabName}`).classList.remove('text-gray-400');
             if(tabName === 'ordenservicio') { calcularOrdenBs(); }
+            if(tabName === 'pdfview') { renderPDFPreview(); }
         }
 
         function resetCotizadorClean() {
@@ -563,6 +672,45 @@
             document.getElementById('docSubtotal').innerText = `$${subtotal.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
             document.getElementById('docIva').innerText = `$${iva.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
             document.getElementById('docTotal').innerText = `$${total.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+        }
+
+        function renderPDFPreview() {
+            document.getElementById('prevDocNum').innerText = document.getElementById('quoteNum').value;
+            document.getElementById('prevDocDate').innerText = document.getElementById('docDate').innerText;
+            document.getElementById('prevDocClientName').innerText = document.getElementById('clientName').value || '-';
+            document.getElementById('prevDocClientRif').innerText = document.getElementById('clientRif').value || '-';
+            document.getElementById('prevDocClientPhone').innerText = document.getElementById('clientPhone').value || '-';
+            document.getElementById('prevDocClientAddress').innerText = document.getElementById('clientAddress').value || '-';
+
+            const tbody = document.getElementById('prevItemsTableBody');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+
+            if(currentQuoteItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400 italic">Cotización vacía.</td></tr>`;
+            }
+
+            currentQuoteItems.forEach((item, index) => {
+                const itemSubtotal = item.qty * item.price;
+                subtotal += itemSubtotal;
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="py-2 px-2 text-center font-semibold text-gray-500">${index + 1}</td>
+                        <td class="py-2 px-2 uppercase font-medium">${item.desc}</td>
+                        <td class="py-2 px-2 text-center">${item.qty}</td>
+                        <td class="py-2 px-2 text-center">${item.um}</td>
+                        <td class="py-2 px-2 text-right font-mono">$${item.price.toFixed(2)}</td>
+                        <td class="py-2 px-2 text-right font-mono font-bold">$${itemSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            document.getElementById('prevDocSubtotal').innerText = `$${subtotal.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('prevDocIva').innerText = `$${iva.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
+            document.getElementById('prevDocTotal').innerText = `$${total.toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
         }
 
         function updateItem(index, field, value) {
@@ -668,19 +816,396 @@ TOTAL GENERAL Bs.: Bs. ${totalBs.toFixed(2).replace('.', ',')}`;
             });
         }
 
-        function generatePDF() {
-            const element = document.getElementById('quoteDoc');
-            const quoteNum = document.getElementById('quoteNum').value;
-            const opt = {
-                margin:       [0.2, 0.2, 0.2, 0.2],
-                filename:     `cotizacion_${quoteNum}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false, letterRendering: true },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        function getSafeLogoHtmlForPDF() {
+            const origImg = document.querySelector('#quoteDoc img') || document.querySelector('header img');
+            if (origImg && origImg.complete && origImg.naturalWidth > 0) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = origImg.naturalWidth;
+                    canvas.height = origImg.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(origImg, 0, 0);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    return `<img src="${dataUrl}" alt="Logo Aerotrucks" style="width:56px;height:56px;object-fit:contain;flex-shrink:0;">`;
+                } catch (e) {
+                    // Si file:// bloquea el canvas, usar emblema corporativo limpio
+                }
+            }
+            return `<div style="width:56px;height:56px;background:#EAB308;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#111827;font-size:20px;flex-shrink:0;font-family:Arial,sans-serif;">AB</div>`;
+        }
+
+        function escapeHtmlText(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function buildPrintableLetterNode() {
+            const quoteNum = escapeHtmlText(document.getElementById('quoteNum').value || '000000170');
+            const quoteDate = escapeHtmlText(document.getElementById('docDate').innerText || '-');
+            const clientName = escapeHtmlText(document.getElementById('clientName').value || '-');
+            const clientRif = escapeHtmlText(document.getElementById('clientRif').value || '-');
+            const clientPhone = escapeHtmlText(document.getElementById('clientPhone').value || '-');
+            const clientAddress = escapeHtmlText(document.getElementById('clientAddress').value || '-');
+            const logoHtml = getSafeLogoHtmlForPDF();
+
+            let subtotal = 0;
+            let rowsHtml = '';
+
+            if (!currentQuoteItems || currentQuoteItems.length === 0) {
+                rowsHtml = `<tr><td colspan="6" style="padding:14px;text-align:center;color:#9CA3AF;font-style:italic;border-bottom:1px solid #E5E7EB;">Cotización vacía.</td></tr>`;
+            } else {
+                currentQuoteItems.forEach((item, idx) => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const price = parseFloat(item.price) || 0;
+                    const lineSub = qty * price;
+                    subtotal += lineSub;
+                    rowsHtml += `
+                        <tr style="border-bottom:1px solid #E5E7EB;">
+                            <td style="padding:6px 5px;text-align:center;color:#4B5563;font-weight:600;word-wrap:break-word;">${idx + 1}</td>
+                            <td style="padding:6px 6px;color:#111827;font-weight:500;text-transform:uppercase;word-wrap:break-word;overflow-wrap:break-word;">${escapeHtmlText(item.desc)}</td>
+                            <td style="padding:6px 5px;text-align:center;color:#111827;word-wrap:break-word;">${qty}</td>
+                            <td style="padding:6px 5px;text-align:center;color:#111827;word-wrap:break-word;">${escapeHtmlText(item.um || 'pza')}</td>
+                            <td style="padding:6px 6px;text-align:right;font-family:monospace;color:#111827;white-space:nowrap;">$${price.toFixed(2)}</td>
+                            <td style="padding:6px 6px;text-align:right;font-family:monospace;font-weight:700;color:#111827;white-space:nowrap;">$${lineSub.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'width:736px;padding:12px 16px;margin:0;background:#FFFFFF;color:#1F2937;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35;box-sizing:border-box;';
+            wrapper.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #D1D5DB;padding-bottom:10px;margin-bottom:12px;gap:12px;">
+                    <div style="display:flex;align-items:flex-start;gap:10px;max-width:530px;min-width:0;">
+                        ${logoHtml}
+                        <div style="font-size:10.5px;color:#374151;word-wrap:break-word;overflow-wrap:break-word;">
+                            <div style="font-weight:700;font-size:12.5px;color:#111827;margin-bottom:2px;">AEROTRUCKS BARCELONA, C.A.</div>
+                            <div style="font-weight:600;color:#4B5563;">RIF: J-503433256</div>
+                            <div style="word-wrap:break-word;">Av. José Antonio Anzoátegui, Edif AEROTRUCKS BARCELONA, piso PB local 1</div>
+                            <div style="word-wrap:break-word;">Via Aeropuerto Barcelona, Anzoátegui</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;width:155px;">
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;letter-spacing:0.5px;">COTIZACIÓN</div>
+                        <div style="font-size:16px;font-weight:700;font-family:monospace;color:#111827;margin-top:2px;">${quoteNum}</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;gap:14px;background:#F9FAFB;padding:10px;border-radius:4px;border:1px solid #E5E7EB;margin-bottom:14px;font-size:10.5px;box-sizing:border-box;">
+                    <div style="width:48%;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">
+                        <div style="margin-bottom:2px;"><strong style="color:#374151;">Emisión:</strong> ${quoteDate}</div>
+                        <div style="margin-bottom:6px;"><strong style="color:#374151;">Condición de Pago:</strong> Contado</div>
+                        <div style="font-weight:700;color:#374151;">Nombre / Razón Social:</div>
+                        <div style="font-weight:700;color:#111827;margin-bottom:4px;word-wrap:break-word;">${clientName}</div>
+                        <div style="margin-bottom:2px;"><strong style="color:#374151;">C.I. / RIF:</strong> ${clientRif}</div>
+                        <div><strong style="color:#374151;">Teléfono:</strong> ${clientPhone}</div>
+                    </div>
+                    <div style="width:48%;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">
+                        <div style="font-weight:700;color:#374151;margin-bottom:2px;">Domicilio Fiscal:</div>
+                        <div style="color:#1F2937;text-transform:uppercase;word-wrap:break-word;overflow-wrap:break-word;">${clientAddress}</div>
+                    </div>
+                </div>
+
+                <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:14px;font-size:10.5px;">
+                    <thead>
+                        <tr style="background:#E5E7EB;color:#1F2937;font-weight:700;border-bottom:1px solid #9CA3AF;">
+                            <th style="width:7%;padding:6px 4px;text-align:center;">Item</th>
+                            <th style="width:43%;padding:6px 6px;text-align:left;">Descripción</th>
+                            <th style="width:9%;padding:6px 4px;text-align:center;">Cant.</th>
+                            <th style="width:9%;padding:6px 4px;text-align:center;">U/M</th>
+                            <th style="width:15%;padding:6px 6px;text-align:right;">Precio ($)</th>
+                            <th style="width:17%;padding:6px 6px;text-align:right;">SubTotal ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;border-top:1px solid #D1D5DB;padding-top:10px;margin-bottom:18px;">
+                    <div style="width:240px;font-size:11px;box-sizing:border-box;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <span style="font-weight:700;color:#4B5563;">Subtotal General:</span>
+                            <span style="font-family:monospace;font-weight:700;color:#111827;">$${subtotal.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <span style="font-weight:700;color:#4B5563;">Descuento:</span>
+                            <span style="font-family:monospace;color:#111827;">$0,00</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                            <span style="font-weight:700;color:#4B5563;">IVA (16%):</span>
+                            <span style="font-family:monospace;font-weight:700;color:#111827;">$${iva.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;border-top:1px solid #6B7280;padding-top:5px;font-size:12.5px;font-weight:700;color:#111827;">
+                            <span>TOTAL VENTA ($):</span>
+                            <span style="font-family:monospace;">$${total.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top:1px solid #E5E7EB;padding-top:8px;text-align:center;font-size:10px;color:#6B7280;font-style:italic;">
+                    Cotización válida por 2 días.
+                </div>
+            `;
+            return wrapper;
+        }
+
+        function escapePdfText(str) {
+            return String(str || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\x20-\x7E]/g, ' ')
+                .replace(/\\/g, '\\\\')
+                .replace(/\(/g, '\\(')
+                .replace(/\)/g, '\\)');
+        }
+
+        function wrapPdfLines(text, maxChars) {
+            const clean = String(text || '').toUpperCase().trim();
+            if (!clean) return ['-'];
+            const words = clean.split(/\s+/);
+            const lines = [];
+            let cur = '';
+            for (const w of words) {
+                if ((cur + ' ' + w).trim().length <= maxChars) {
+                    cur = (cur + ' ' + w).trim();
+                } else {
+                    if (cur) lines.push(cur);
+                    cur = w.length > maxChars ? w.slice(0, maxChars) : w;
+                }
+            }
+            if (cur) lines.push(cur);
+            return lines;
+        }
+
+        function buildNativePdfBlob(quoteNum, quoteDate, clientName, clientRif, clientPhone, clientAddress, items) {
+            // Tamaño Carta en puntos PostScript: 612 x 792 pt (8.5 x 11 in)
+            const W = 612;
+            const H = 792;
+            const ops = [];
+
+            const addText = (font, size, x, yPt, txt, align = 'left') => {
+                const pdfY = H - yPt;
+                const esc = escapePdfText(txt);
+                const estWidth = esc.length * size * 0.48;
+                let drawX = x;
+                if (align === 'right') drawX = x - estWidth;
+                else if (align === 'center') drawX = x - estWidth / 2;
+                ops.push(`BT /${font} ${size} Tf 1 0 0 1 ${drawX.toFixed(1)} ${pdfY.toFixed(1)} Tm (${esc}) Tj ET`);
             };
-            html2pdf().set(opt).from(element).save().catch(() => {
-                window.print();
+
+            const addRect = (x, yPt, w, h, fillRgb = null, strokeRgb = null) => {
+                const pdfY = H - yPt - h;
+                if (fillRgb) {
+                    ops.push(`${(fillRgb[0]/255).toFixed(3)} ${(fillRgb[1]/255).toFixed(3)} ${(fillRgb[2]/255).toFixed(3)} rg`);
+                }
+                if (strokeRgb) {
+                    ops.push(`${(strokeRgb[0]/255).toFixed(3)} ${(strokeRgb[1]/255).toFixed(3)} ${(strokeRgb[2]/255).toFixed(3)} RG 0.8 w`);
+                }
+                const mode = fillRgb && strokeRgb ? 'B' : (fillRgb ? 'f' : 'S');
+                ops.push(`${x.toFixed(1)} ${pdfY.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re ${mode}`);
+            };
+
+            const addLine = (x1, y1Pt, x2, y2Pt, rgb = [209, 213, 219], lw = 0.8) => {
+                const p1y = H - y1Pt;
+                const p2y = H - y2Pt;
+                ops.push(`${(rgb[0]/255).toFixed(3)} ${(rgb[1]/255).toFixed(3)} ${(rgb[2]/255).toFixed(3)} RG ${lw} w`);
+                ops.push(`${x1.toFixed(1)} ${p1y.toFixed(1)} m ${x2.toFixed(1)} ${p2y.toFixed(1)} l S`);
+            };
+
+            // Emblema AB y encabezado empresa
+            addRect(36, 34, 42, 42, [234, 179, 8], null);
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 16, 46, 61, 'AB', 'left');
+
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 12, 86, 44, 'AEROTRUCKS BARCELONA, C.A.', 'left');
+            ops.push('0.294 0.333 0.388 rg');
+            addText('F2', 9, 86, 57, 'RIF: J-503433256', 'left');
+            ops.push('0.216 0.255 0.318 rg');
+            addText('F1', 8.5, 86, 69, 'Av. Jose Antonio Anzoategui, Edif AEROTRUCKS BARCELONA, piso PB local 1', 'left');
+            addText('F1', 8.5, 86, 80, 'Via Aeropuerto Barcelona, Anzoategui', 'left');
+
+            ops.push('0.420 0.447 0.502 rg');
+            addText('F2', 8.5, 576, 44, 'COTIZACION', 'right');
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 14, 576, 62, String(quoteNum), 'right');
+
+            addLine(36, 90, 576, 90, [209, 213, 219], 1);
+
+            // Caja datos del cliente
+            addRect(36, 100, 540, 82, [249, 250, 251], [229, 231, 235]);
+
+            ops.push('0.122 0.161 0.216 rg');
+            addText('F2', 8.5, 46, 114, 'Emision:', 'left');
+            addText('F1', 8.5, 92, 114, quoteDate, 'left');
+
+            addText('F2', 8.5, 46, 127, 'Condicion de Pago:', 'left');
+            addText('F1', 8.5, 134, 127, 'Contado', 'left');
+
+            addText('F2', 8.5, 46, 142, 'Nombre / Razon Social:', 'left');
+            const nameLines = wrapPdfLines(clientName, 44);
+            addText('F2', 8.5, 46, 154, nameLines[0] || '-', 'left');
+
+            addText('F2', 8.5, 46, 168, 'C.I. / RIF:', 'left');
+            addText('F1', 8.5, 96, 168, `${clientRif}   Tel: ${clientPhone}`, 'left');
+
+            addText('F2', 8.5, 315, 114, 'Domicilio Fiscal:', 'left');
+            const addrLines = wrapPdfLines(clientAddress, 44);
+            addrLines.slice(0, 4).forEach((ln, i) => {
+                addText('F1', 8.5, 315, 127 + i * 12, ln, 'left');
             });
+
+            // Cabecera tabla
+            let y = 196;
+            addRect(36, y, 540, 20, [229, 231, 235], [156, 163, 175]);
+            ops.push('0.122 0.161 0.216 rg');
+            addText('F2', 8.5, 44, y + 13, 'Item', 'left');
+            addText('F2', 8.5, 76, y + 13, 'Descripcion', 'left');
+            addText('F2', 8.5, 376, y + 13, 'Cant.', 'center');
+            addText('F2', 8.5, 415, y + 13, 'U/M', 'center');
+            addText('F2', 8.5, 485, y + 13, 'Precio ($)', 'right');
+            addText('F2', 8.5, 568, y + 13, 'SubTotal ($)', 'right');
+
+            y += 26;
+            let subtotal = 0;
+
+            if (!items || items.length === 0) {
+                ops.push('0.612 0.639 0.686 rg');
+                addText('F1', 9, 306, y + 10, 'Cotizacion vacia.', 'center');
+                y += 26;
+            } else {
+                items.forEach((item, idx) => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const price = parseFloat(item.price) || 0;
+                    const lineSub = qty * price;
+                    subtotal += lineSub;
+
+                    const descLines = wrapPdfLines(item.desc, 48);
+                    const rowHeight = Math.max(18, descLines.length * 11 + 6);
+
+                    ops.push('0.294 0.333 0.388 rg');
+                    addText('F2', 8.5, 48, y + 10, String(idx + 1), 'left');
+                    ops.push('0.067 0.094 0.153 rg');
+                    descLines.forEach((dLine, dIdx) => {
+                        addText('F1', 8.5, 76, y + 10 + dIdx * 11, dLine, 'left');
+                    });
+                    addText('F1', 8.5, 376, y + 10, String(qty), 'center');
+                    addText('F1', 8.5, 415, y + 10, String(item.um || 'pza'), 'center');
+                    addText('F1', 8.5, 485, y + 10, `$${price.toFixed(2)}`, 'right');
+                    addText('F2', 8.5, 568, y + 10, `$${lineSub.toFixed(2)}`, 'right');
+
+                    addLine(36, y + rowHeight, 576, y + rowHeight, [229, 231, 235], 0.6);
+                    y += rowHeight;
+                });
+            }
+
+            // Totales
+            y += 14;
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            addLine(360, y - 6, 576, y - 6, [209, 213, 219], 0.8);
+            ops.push('0.294 0.333 0.388 rg');
+            addText('F2', 9, 366, y + 8, 'Subtotal General:', 'left');
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 9, 568, y + 8, `$${subtotal.toFixed(2)}`, 'right');
+
+            ops.push('0.294 0.333 0.388 rg');
+            addText('F2', 9, 366, y + 22, 'Descuento:', 'left');
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F1', 9, 568, y + 22, '$0.00', 'right');
+
+            ops.push('0.294 0.333 0.388 rg');
+            addText('F2', 9, 366, y + 36, 'IVA (16%):', 'left');
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 9, 568, y + 36, `$${iva.toFixed(2)}`, 'right');
+
+            addLine(360, y + 44, 576, y + 44, [107, 114, 128], 1);
+            ops.push('0.067 0.094 0.153 rg');
+            addText('F2', 10.5, 366, y + 58, 'TOTAL VENTA ($):', 'left');
+            addText('F2', 10.5, 568, y + 58, `$${total.toFixed(2)}`, 'right');
+
+            // Pie de página
+            addLine(36, 738, 576, 738, [229, 231, 235], 0.8);
+            ops.push('0.420 0.447 0.502 rg');
+            addText('F1', 8.5, 306, 752, 'Cotizacion valida por 2 dias.', 'center');
+
+            const streamContent = ops.join('\n');
+            const streamBytesLen = new TextEncoder().encode(streamContent).length;
+
+            const objects = [
+                '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+                '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+                `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n`,
+                '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n',
+                '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n',
+                `6 0 obj\n<< /Length ${streamBytesLen} >>\nstream\n${streamContent}\nendstream\nendobj\n`
+            ];
+
+            let pdfStr = '%PDF-1.4\n';
+            const offsets = [0];
+            for (const obj of objects) {
+                offsets.push(new TextEncoder().encode(pdfStr).length);
+                pdfStr += obj;
+            }
+            const xrefOffset = new TextEncoder().encode(pdfStr).length;
+            pdfStr += `xref\n0 ${objects.length + 1}\n`;
+            pdfStr += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) {
+                pdfStr += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+            }
+            pdfStr += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+            return new Blob([new TextEncoder().encode(pdfStr)], { type: 'application/pdf' });
+        }
+
+        function generatePDF(btnElement) {
+            renderPDFPreview();
+            const quoteNum = document.getElementById('quoteNum').value || '000000170';
+            const quoteDate = document.getElementById('docDate').innerText || '-';
+            const clientName = document.getElementById('clientName').value || '-';
+            const clientRif = document.getElementById('clientRif').value || '-';
+            const clientPhone = document.getElementById('clientPhone').value || '-';
+            const clientAddress = document.getElementById('clientAddress').value || '-';
+
+            const btn = btnElement || (typeof event !== 'undefined' && event ? event.currentTarget : null);
+            let originalText = "";
+            if (btn) {
+                originalText = btn.innerHTML;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...`;
+                btn.disabled = true;
+            }
+
+            try {
+                const pdfBlob = buildNativePdfBlob(
+                    quoteNum,
+                    quoteDate,
+                    clientName,
+                    clientRif,
+                    clientPhone,
+                    clientAddress,
+                    currentQuoteItems
+                );
+                const url = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `cotizacion_${quoteNum}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } catch (err) {
+                console.error("Error al generar PDF nativo:", err);
+                switchTab('pdfview');
+                setTimeout(() => window.print(), 250);
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
         }
 
         function copyWhatsAppText() {
